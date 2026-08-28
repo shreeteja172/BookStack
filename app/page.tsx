@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-[#f7f9fc] text-slate-900">
@@ -11,7 +13,10 @@ export default function Home() {
           <a href="#how-it-works" className="hover:text-indigo-600">How it works</a>
           <a href="#about" className="hover:text-indigo-600">About</a>
         </nav>
-        <a href="#get-started" className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">Get started</a>
+        <div className="flex items-center gap-3">
+          <Link href="/sign-in" className="text-sm font-semibold text-slate-600 hover:text-indigo-600">Sign in</Link>
+          <Link href="/sign-up" className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">Get started</Link>
+        </div>
       </header>
 
       <main>
@@ -21,7 +26,7 @@ export default function Home() {
             <h1 className="max-w-2xl text-5xl font-bold leading-tight tracking-tight sm:text-6xl">Every book.<br /><span className="text-indigo-600">One simple system.</span></h1>
             <p className="mt-6 max-w-xl text-lg leading-8 text-slate-600">BookStack helps libraries organize their collection, manage members, and keep every checkout running smoothly—all in one beautiful workspace.</p>
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-              <a id="get-started" href="#features" className="rounded-lg bg-indigo-600 px-6 py-3.5 text-center font-semibold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700">Start managing free →</a>
+              <Link id="get-started" href="/sign-up" className="rounded-lg bg-indigo-600 px-6 py-3.5 text-center font-semibold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700">Start managing free →</Link>
               <a href="#how-it-works" className="rounded-lg border border-slate-200 bg-white px-6 py-3.5 text-center font-semibold text-slate-700 hover:border-indigo-300">See how it works</a>
             </div>
             <p className="mt-5 text-sm text-slate-500">No credit card required · Set up in minutes</p>
