@@ -35,14 +35,14 @@ export function SignInForm({ redirectTo }: { redirectTo: string }) {
       {error ? (
         <p
           role="alert"
-          className="rounded-lg bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700"
+          className="rounded-lg bg-ember/10 px-4 py-3 text-sm font-medium text-ember"
         >
           {error}
         </p>
       ) : null}
 
       <div>
-        <label htmlFor="email" className="mb-2 block text-sm font-semibold text-slate-700">
+        <label htmlFor="email" className="mb-2 block text-sm font-semibold text-ink">
           Email
         </label>
         <input
@@ -52,12 +52,12 @@ export function SignInForm({ redirectTo }: { redirectTo: string }) {
           required
           autoComplete="email"
           placeholder="you@library.org"
-          className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 outline-none focus:border-indigo-500"
+          className="w-full rounded-lg border border-line bg-surface px-4 py-3 outline-none focus:border-brand"
         />
       </div>
 
       <div>
-        <label htmlFor="password" className="mb-2 block text-sm font-semibold text-slate-700">
+        <label htmlFor="password" className="mb-2 block text-sm font-semibold text-ink">
           Password
         </label>
         <input
@@ -67,14 +67,14 @@ export function SignInForm({ redirectTo }: { redirectTo: string }) {
           required
           autoComplete="current-password"
           placeholder="••••••••"
-          className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 outline-none focus:border-indigo-500"
+          className="w-full rounded-lg border border-line bg-surface px-4 py-3 outline-none focus:border-brand"
         />
       </div>
 
       <button
         type="submit"
         disabled={isPending}
-        className="w-full rounded-lg bg-indigo-600 px-6 py-3.5 font-semibold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 disabled:opacity-60"
+        className="w-full rounded-lg bg-ember px-6 py-3.5 font-semibold text-white shadow-lg shadow-ember/25 hover:brightness-95 disabled:opacity-60"
       >
         {isPending ? "Signing in…" : "Sign in"}
       </button>

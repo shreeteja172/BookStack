@@ -17,7 +17,7 @@ export function GoogleButton({ redirectTo }: { redirectTo: string }) {
       type="button"
       onClick={handleClick}
       disabled={isPending}
-      className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 font-semibold text-slate-700 hover:border-indigo-300 disabled:opacity-60"
+      className="flex w-full items-center justify-center gap-3 rounded-lg border border-line bg-surface px-4 py-3 font-semibold text-ink hover:border-brand-light disabled:opacity-60"
     >
       <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
         <path
