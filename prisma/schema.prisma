@@ -17,8 +17,10 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  sessions Session[]
-  accounts Account[]
+  sessions     Session[]
+  accounts     Account[]
+  loans        Loan[]
+  reservations Reservation[]
 
   @@map("users")
 }
@@ -72,4 +74,78 @@ model Verification {
 
   @@index([identifier])
   @@map("verifications")
+}
+
+model Book {
+  id            String   @id @default(cuid())
+  title         String
+  author        String
+  isbn          String   @unique
+  publisher     String?
+  category      String
+  description   String?
+  publishedYear Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  copies       BookCopy[]
+  reservations Reservation[]
+
+  @@index([category])
+  @@index([author])
+  @@map("books")
+}
+
+model BookCopy {
+  id      String @id @default(cuid())
+  barcode String @unique
+  floor   String
+  shelf   String
+  row     String
+  status  String @default("available")
+
+  bookId String
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  loans Loan[]
+
+  @@index([bookId])
+  @@index([status])
+  @@map("book_copies")
+}
+
+model Loan {
+  id         String    @id @default(cuid())
+  issuedAt   DateTime  @default(now())
+  dueAt      DateTime
+  returnedAt DateTime?
+  fineCents  Int       @default(0)
+
+  copyId String
+  copy   BookCopy @relation(fields: [copyId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([copyId])
+  @@index([returnedAt])
+  @@map("loans")
+}
+
+model Reservation {
+  id        String    @id @default(cuid())
+  status    String    @default("waiting")
+  createdAt DateTime  @default(now())
+  readyAt   DateTime?
+
+  bookId String
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, userId])
+  @@index([bookId, createdAt])
+  @@map("reservations")
 }

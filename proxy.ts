@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
-const protectedRoutes = ["/dashboard", "/catalogue", "/members"];
+const protectedRoutes = ["/dashboard", "/catalogue", "/circulation", "/members"];
 const authRoutes = ["/sign-in", "/sign-up"];
 
 export function proxy(request: NextRequest) {
