@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { SiteNav } from "@/components/site-nav";
 import { SearchIcon } from "@/components/icons";
+import { BookCover } from "@/components/book-cover";
 import { requireUser } from "@/lib/session";
 import { isLibrarian } from "@/lib/roles";
 import { getCategories, searchBooks } from "@/lib/library";
@@ -12,6 +13,7 @@ export const metadata: Metadata = {
 
 export default async function CataloguePage({ searchParams }: PageProps<"/catalogue">) {
   const user = await requireUser();
+  const librarian = isLibrarian(user);
   const params = await searchParams;
 
   const query = typeof params.q === "string" ? params.q : "";
@@ -25,13 +27,25 @@ export default async function CataloguePage({ searchParams }: PageProps<"/catalo
 
   return (
     <div className="min-h-screen bg-canvas text-ink">
-      <SiteNav email={user.email} librarian={isLibrarian(user)} />
+      <SiteNav email={user.email} librarian={librarian} />
 
       <main className="mx-auto max-w-7xl px-6 py-10 lg:px-12">
-        <h1 className="text-3xl font-bold tracking-tight">Catalogue</h1>
-        <p className="mt-2 text-muted">
-          Search by title, author, ISBN or category. {books.length} of the collection shown.
-        </p>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Catalogue</h1>
+            <p className="mt-2 text-muted">
+              Search by title, author, ISBN or category. {books.length} of the collection shown.
+            </p>
+          </div>
+          {librarian ? (
+            <Link
+              href="/catalogue/new"
+              className="rounded-lg bg-brand px-5 py-3 font-semibold text-white hover:brightness-110"
+            >
+              Add a book
+            </Link>
+          ) : null}
+        </div>
 
         <form className="mt-8 grid gap-3 rounded-2xl border border-line bg-surface p-4 md:grid-cols-[1fr_auto_auto_auto]">
           <div className="relative">
@@ -103,6 +117,9 @@ export default async function CataloguePage({ searchParams }: PageProps<"/catalo
                     href={`/catalogue/${book.id}`}
                     className="flex h-full flex-col rounded-2xl border border-line bg-surface p-5 transition hover:border-brand-light"
                   >
+                    <div className="mb-4 h-36 w-24 overflow-hidden rounded-lg shadow-sm">
+                      <BookCover title={book.title} author={book.author} seed={book.id} />
+                    </div>
                     <div className="flex items-start justify-between gap-3">
                       <span className="rounded-full bg-sand px-3 py-1 text-xs font-bold text-brand">
                         {book.category}
@@ -116,7 +133,7 @@ export default async function CataloguePage({ searchParams }: PageProps<"/catalo
                       </span>
                     </div>
 
-                    <h2 className="mt-4 text-lg font-bold leading-snug">{book.title}</h2>
+                    <h2 className="mt-3 text-lg font-bold leading-snug">{book.title}</h2>
                     <p className="mt-1 text-sm text-muted">
                       {book.author}
                       {book.publishedYear ? ` · ${book.publishedYear}` : ""}

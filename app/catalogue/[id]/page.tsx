@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { SiteNav } from "@/components/site-nav";
 import { ReserveButton } from "@/components/reserve-button";
 import { ArrowLeftIcon, MapPinIcon, UsersIcon } from "@/components/icons";
+import { BookCover } from "@/components/book-cover";
 import { requireUser } from "@/lib/session";
 import { isLibrarian } from "@/lib/roles";
 import { getBook, getRelatedBooks } from "@/lib/library";
@@ -20,6 +21,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 export default async function BookPage({ params }: PageProps<"/catalogue/[id]">) {
   const user = await requireUser();
+  const librarian = isLibrarian(user);
   const { id } = await params;
 
   const book = await getBook(id);
@@ -35,24 +37,43 @@ export default async function BookPage({ params }: PageProps<"/catalogue/[id]">)
 
   return (
     <div className="min-h-screen bg-canvas text-ink">
-      <SiteNav email={user.email} librarian={isLibrarian(user)} />
+      <SiteNav email={user.email} librarian={librarian} />
 
       <main className="mx-auto max-w-7xl px-6 py-10 lg:px-12">
-        <Link
-          href="/catalogue"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-brand hover:text-ember"
-        >
-          <ArrowLeftIcon className="h-4 w-4" />
-          Back to catalogue
-        </Link>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <Link
+            href="/catalogue"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-brand hover:text-ember"
+          >
+            <ArrowLeftIcon className="h-4 w-4" />
+            Back to catalogue
+          </Link>
+          {librarian ? (
+            <Link
+              href={`/catalogue/${book.id}/edit`}
+              className="rounded-lg border border-line bg-surface px-5 py-2.5 text-sm font-semibold text-brand hover:border-brand-light"
+            >
+              Edit book
+            </Link>
+          ) : null}
+        </div>
 
         <div className="mt-6 grid gap-8 lg:grid-cols-[1.6fr_1fr]">
           <div className="rounded-3xl border border-line bg-surface p-8">
-            <span className="rounded-full bg-sand px-3 py-1 text-xs font-bold text-brand">
-              {book.category}
-            </span>
-            <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight">{book.title}</h1>
-            <p className="mt-2 text-lg text-muted">{book.author}</p>
+            <div className="flex flex-wrap gap-6">
+              <div className="h-48 w-32 shrink-0 overflow-hidden rounded-xl shadow-md">
+                <BookCover title={book.title} author={book.author} seed={book.id} />
+              </div>
+              <div className="min-w-[16rem] flex-1">
+                <span className="rounded-full bg-sand px-3 py-1 text-xs font-bold text-brand">
+                  {book.category}
+                </span>
+                <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight">
+                  {book.title}
+                </h1>
+                <p className="mt-2 text-lg text-muted">{book.author}</p>
+              </div>
+            </div>
 
             {book.description ? (
               <p className="mt-6 leading-7 text-muted">{book.description}</p>
