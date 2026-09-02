@@ -14,6 +14,7 @@ export function SiteNav({ email, librarian }: SiteNavProps) {
     ...(librarian
       ? [
           { href: "/circulation", label: "Circulation" },
+          { href: "/analytics", label: "Analytics" },
           { href: "/members", label: "Members" },
         ]
       : []),

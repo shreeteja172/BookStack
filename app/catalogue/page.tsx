@@ -3,9 +3,11 @@ import type { Metadata } from "next";
 import { SiteNav } from "@/components/site-nav";
 import { SearchIcon } from "@/components/icons";
 import { BookCover } from "@/components/book-cover";
+import { RatingSummary } from "@/components/reviews";
 import { requireUser } from "@/lib/session";
 import { isLibrarian } from "@/lib/roles";
 import { getCategories, searchBooks } from "@/lib/library";
+import { getRatingSummaries } from "@/lib/recommendations";
 
 export const metadata: Metadata = {
   title: "Catalogue · BookStack",
@@ -24,6 +26,8 @@ export default async function CataloguePage({ searchParams }: PageProps<"/catalo
     searchBooks({ query, category, availableOnly }),
     getCategories(),
   ]);
+
+  const ratings = await getRatingSummaries(books.map((book) => book.id));
 
   return (
     <div className="min-h-screen bg-canvas text-ink">
@@ -138,6 +142,13 @@ export default async function CataloguePage({ searchParams }: PageProps<"/catalo
                       {book.author}
                       {book.publishedYear ? ` · ${book.publishedYear}` : ""}
                     </p>
+
+                    <div className="mt-2">
+                      <RatingSummary
+                        average={ratings.get(book.id)?.average ?? 0}
+                        count={ratings.get(book.id)?.count ?? 0}
+                      />
+                    </div>
 
                     {book.description ? (
                       <p className="mt-3 line-clamp-3 text-sm text-muted">{book.description}</p>

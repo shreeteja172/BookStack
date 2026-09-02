@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { SiteNav } from "@/components/site-nav";
 import { CancelReservationButton } from "@/components/reserve-button";
 import { AlertIcon, BookmarkIcon, BooksIcon, ClockIcon, MapPinIcon } from "@/components/icons";
+import { BookCover } from "@/components/book-cover";
 import { requireUser } from "@/lib/session";
 import { isLibrarian } from "@/lib/roles";
 import {
@@ -15,6 +16,7 @@ import {
   getMemberReservations,
   getMemberStats,
 } from "@/lib/library";
+import { getPersonalRecommendations } from "@/lib/recommendations";
 
 export const metadata: Metadata = {
   title: "Dashboard · BookStack",
@@ -30,11 +32,12 @@ export default async function DashboardPage() {
   const user = await requireUser();
   const librarian = isLibrarian(user);
 
-  const [{ active, history }, reservations, stats, libraryStats] = await Promise.all([
+  const [{ active, history }, reservations, stats, libraryStats, picks] = await Promise.all([
     getMemberLoans(user.id),
     getMemberReservations(user.id),
     getMemberStats(user.id),
     librarian ? getLibraryStats() : Promise.resolve(null),
+    getPersonalRecommendations(user.id),
   ]);
 
   const now = new Date();
@@ -147,6 +150,33 @@ export default async function DashboardPage() {
               })}
             </ul>
           )}
+        </section>
+
+        <section className="mt-10">
+          <h2 className="text-xl font-bold">Picked for you</h2>
+          <p className="mt-1 text-sm text-muted">{picks[0]?.reason ?? "Popular right now"}</p>
+
+          <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {picks.map((pick) => (
+              <li key={pick.id}>
+                <Link
+                  href={`/catalogue/${pick.id}`}
+                  className="flex h-full items-center gap-4 rounded-2xl border border-line bg-surface p-4 transition hover:border-brand-light"
+                >
+                  <div className="h-24 w-16 shrink-0 overflow-hidden rounded-lg shadow-sm">
+                    <BookCover title={pick.title} author={pick.author} seed={pick.id} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate font-bold">{pick.title}</p>
+                    <p className="mt-1 truncate text-sm text-muted">{pick.author}</p>
+                    <span className="mt-2 inline-block rounded-full bg-sand px-2.5 py-0.5 text-xs font-bold text-brand">
+                      {pick.category}
+                    </span>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </section>
 
         <section className="mt-10">

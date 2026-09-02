@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "./prisma";
-import { requireLibrarian } from "./session";
+import { requireLibrarian, requireUser } from "./session";
 import type { ActionState } from "./action-state";
 
 function fail(message: string): ActionState {
@@ -227,4 +227,36 @@ export async function removeCopy(
   revalidatePath(`/catalogue/${copy.bookId}/edit`);
 
   return done(`Removed copy ${copy.barcode}.`);
+}
+
+export async function saveReview(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+
+  const bookId = String(formData.get("bookId") ?? "");
+  const rating = Number(formData.get("rating") ?? 0);
+  const body = String(formData.get("body") ?? "").trim();
+
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return fail("Choose a rating between 1 and 5 stars.");
+  }
+
+  const book = await prisma.book.findUnique({ where: { id: bookId } });
+
+  if (!book) {
+    return fail("Book not found.");
+  }
+
+  await prisma.review.upsert({
+    where: { bookId_userId: { bookId, userId: user.id } },
+    update: { rating, body: body || null },
+    create: { bookId, userId: user.id, rating, body: body || null },
+  });
+
+  revalidatePath(`/catalogue/${bookId}`);
+  revalidatePath("/catalogue");
+
+  return done("Thanks, your review is saved.");
 }

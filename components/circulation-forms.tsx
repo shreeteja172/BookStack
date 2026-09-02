@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { issueBook, returnBook } from "@/lib/actions";
 import { idleState } from "@/lib/action-state";
+import { BarcodeScanner } from "./barcode-scanner";
 
 function Feedback({ ok, message }: { ok: boolean; message: string }) {
   if (!message) {
@@ -26,12 +27,13 @@ const fieldClass =
 
 export function IssueForm() {
   const [state, formAction, pending] = useActionState(issueBook, idleState);
+  const [barcode, setBarcode] = useState("");
 
   return (
     <form action={formAction} className="rounded-2xl border border-line bg-surface p-6">
       <h2 className="text-lg font-bold">Issue a book</h2>
       <p className="mt-1 text-sm text-muted">
-        Scan the copy barcode and enter the member email. Due date is set 14 days out.
+        Scan the copy barcode or type it, then enter the member email. Due date is set 14 days out.
       </p>
 
       <div className="mt-5 space-y-4">
@@ -43,9 +45,14 @@ export function IssueForm() {
             id="issue-barcode"
             name="barcode"
             required
+            value={barcode}
+            onChange={(event) => setBarcode(event.target.value)}
             placeholder="BK-0001-1"
             className={fieldClass}
           />
+          <div className="mt-3">
+            <BarcodeScanner onDetected={setBarcode} />
+          </div>
         </div>
         <div>
           <label htmlFor="issue-email" className="mb-2 block text-sm font-semibold">
@@ -77,6 +84,7 @@ export function IssueForm() {
 
 export function ReturnForm() {
   const [state, formAction, pending] = useActionState(returnBook, idleState);
+  const [barcode, setBarcode] = useState("");
 
   return (
     <form action={formAction} className="rounded-2xl border border-line bg-surface p-6">
@@ -93,9 +101,14 @@ export function ReturnForm() {
           id="return-barcode"
           name="barcode"
           required
+          value={barcode}
+          onChange={(event) => setBarcode(event.target.value)}
           placeholder="BK-0001-1"
           className={fieldClass}
         />
+        <div className="mt-3">
+          <BarcodeScanner onDetected={setBarcode} />
+        </div>
       </div>
 
       <button

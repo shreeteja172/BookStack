@@ -21,6 +21,7 @@ model User {
   accounts     Account[]
   loans        Loan[]
   reservations Reservation[]
+  reviews      Review[]
 
   @@map("users")
 }
@@ -90,6 +91,7 @@ model Book {
 
   copies       BookCopy[]
   reservations Reservation[]
+  reviews      Review[]
 
   @@index([category])
   @@index([author])
@@ -148,4 +150,22 @@ model Reservation {
   @@unique([bookId, userId])
   @@index([bookId, createdAt])
   @@map("reservations")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int
+  body      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookId String
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, userId])
+  @@index([bookId])
+  @@map("reviews")
 }
