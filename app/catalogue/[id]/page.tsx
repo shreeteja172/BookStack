@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { SiteNav } from "@/components/site-nav";
 import { ReserveButton } from "@/components/reserve-button";
+import { BorrowButton } from "@/components/borrow-buttons";
 import { ArrowLeftIcon, MapPinIcon, UsersIcon } from "@/components/icons";
 import { BookCover } from "@/components/book-cover";
 import { RatingSummary, ReviewForm, Stars } from "@/components/reviews";
@@ -16,6 +17,7 @@ import {
   getRatingSummary,
   hasBorrowed,
 } from "@/lib/recommendations";
+import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
   title: "Book · BookStack",
@@ -53,6 +55,12 @@ export default async function BookPage({ params }: PageProps<"/catalogue/[id]">)
     hasBorrowed(user.id, book.id),
   ]);
 
+  const activeLoan = await prisma.loan.findFirst({
+    where: { userId: user.id, returnedAt: null, copy: { bookId: book.id } },
+    select: { id: true },
+  });
+
+  const alreadyHave = activeLoan !== null;
   const onShelf = book.availableCount > 0;
   const myReservation = book.reservations.find((item) => item.userId === user.id);
   const queueLength = book.reservations.filter((item) => item.status === "waiting").length;
@@ -225,13 +233,15 @@ export default async function BookPage({ params }: PageProps<"/catalogue/[id]">)
                 {myReservation ? (
                   <p className="rounded-lg bg-brand/10 px-4 py-3 text-sm font-medium text-brand">
                     {myReservation.status === "ready"
-                      ? "A copy is being held for you. Collect it at the issue desk."
+                      ? "A copy is held for you. Borrow it now."
                       : "You are in the queue for this book."}
                   </p>
-                ) : onShelf ? (
+                ) : alreadyHave ? (
                   <p className="rounded-lg bg-brand/10 px-4 py-3 text-sm font-medium text-brand">
-                    Available now. Take the shelf location above to the issue desk.
+                    You have this book out. Return it from your dashboard.
                   </p>
+                ) : onShelf ? (
+                  <BorrowButton bookId={book.id} />
                 ) : (
                   <ReserveButton bookId={book.id} />
                 )}

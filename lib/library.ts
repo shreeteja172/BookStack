@@ -5,6 +5,8 @@ import { prisma } from "./prisma";
 export const LOAN_DAYS = 14;
 export const FINE_PER_DAY_PAISE = 500;
 export const MAX_ACTIVE_LOANS = 3;
+export const MAX_RENEWALS = 2;
+export const FINE_BORROW_BLOCK_PAISE = 5000;
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -229,4 +231,29 @@ export async function getMembers() {
     },
     orderBy: { createdAt: "asc" },
   });
+}
+
+export async function getPublicStats() {
+  const [books, copies, onLoan, members] = await Promise.all([
+    prisma.book.count(),
+    prisma.bookCopy.count(),
+    prisma.bookCopy.count({ where: { status: "on_loan" } }),
+    prisma.user.count(),
+  ]);
+
+  return { books, copies, onLoan, members };
+}
+
+export async function getRecentActivity(limit = 3) {
+  const loans = await prisma.loan.findMany({
+    include: { copy: { include: { book: { select: { title: true } } } } },
+    orderBy: { issuedAt: "desc" },
+    take: limit,
+  });
+
+  return loans.map((loan) => ({
+    id: loan.id,
+    title: loan.copy.book.title,
+    state: loan.returnedAt ? "Returned" : "Checked out",
+  }));
 }

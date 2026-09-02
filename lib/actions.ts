@@ -5,7 +5,10 @@ import { prisma } from "./prisma";
 import { requireLibrarian, requireUser } from "./session";
 import type { ActionState } from "./action-state";
 import {
+  FINE_BORROW_BLOCK_PAISE,
+  LOAN_DAYS,
   MAX_ACTIVE_LOANS,
+  MAX_RENEWALS,
   dueDateFrom,
   fineForPaise,
   formatRupees,
@@ -41,7 +44,7 @@ export async function reserveBook(
   }
 
   if (book.copies.some((copy) => copy.status === "available")) {
-    return fail("A copy is on the shelf right now. Collect it at the issue desk.");
+    return fail("A copy is available right now. Borrow it instead of queueing.");
   }
 
   const existing = await prisma.reservation.findUnique({
@@ -258,4 +261,188 @@ export async function setMemberRole(
   revalidatePath("/members");
 
   return done(`${updated.name} is now a ${role}.`);
+}
+
+export async function borrowBook(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  const bookId = String(formData.get("bookId") ?? "");
+
+  const book = await prisma.book.findUnique({
+    where: { id: bookId },
+    include: { copies: true },
+  });
+
+  if (!book) {
+    return fail("That book is no longer in the catalogue.");
+  }
+
+  const activeLoans = await prisma.loan.findMany({
+    where: { userId: user.id, returnedAt: null },
+    include: { copy: true },
+  });
+
+  if (activeLoans.some((loan) => loan.copy.bookId === bookId)) {
+    return fail("You already have a copy of this book.");
+  }
+
+  if (activeLoans.length >= MAX_ACTIVE_LOANS) {
+    return fail(
+      `You already have ${MAX_ACTIVE_LOANS} books out. Return one before borrowing another.`,
+    );
+  }
+
+  const outstanding = activeLoans.reduce(
+    (sum, loan) => sum + fineForPaise(loan.dueAt),
+    0,
+  );
+
+  if (outstanding >= FINE_BORROW_BLOCK_PAISE) {
+    return fail(
+      `You owe ${formatRupees(outstanding)} in late fees. Settle up before borrowing again.`,
+    );
+  }
+
+  const myHold = await prisma.reservation.findFirst({
+    where: { bookId, userId: user.id, status: "ready" },
+  });
+
+  const copy = myHold
+    ? book.copies.find((item) => item.status === "reserved") ??
+      book.copies.find((item) => item.status === "available")
+    : book.copies.find((item) => item.status === "available");
+
+  if (!copy) {
+    return fail("Every copy is out right now. Join the queue instead.");
+  }
+
+  const dueAt = dueDateFrom();
+
+  await prisma.$transaction([
+    prisma.loan.create({ data: { copyId: copy.id, userId: user.id, dueAt } }),
+    prisma.bookCopy.update({ where: { id: copy.id }, data: { status: "on_loan" } }),
+    prisma.reservation.deleteMany({ where: { bookId, userId: user.id } }),
+  ]);
+
+  revalidatePath(`/catalogue/${bookId}`);
+  revalidatePath("/catalogue");
+  revalidatePath("/dashboard");
+
+  return done(
+    `Borrowed. Copy ${copy.barcode} is yours until ${dueAt.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    })}. Collect it from Floor ${copy.floor}, Shelf ${copy.shelf}, Row ${copy.row}.`,
+  );
+}
+
+export async function returnOwnBook(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  const loanId = String(formData.get("loanId") ?? "");
+
+  const loan = await prisma.loan.findUnique({
+    where: { id: loanId },
+    include: { copy: { include: { book: true } } },
+  });
+
+  if (!loan || loan.userId !== user.id) {
+    return fail("Loan not found.");
+  }
+
+  if (loan.returnedAt) {
+    return fail("That book is already back.");
+  }
+
+  const returnedAt = new Date();
+  const finePaise = fineForPaise(loan.dueAt, returnedAt);
+  const late = overdueDays(loan.dueAt, returnedAt);
+
+  const nextInQueue = await prisma.reservation.findFirst({
+    where: { bookId: loan.copy.bookId, status: "waiting" },
+    orderBy: { createdAt: "asc" },
+  });
+
+  await prisma.$transaction([
+    prisma.loan.update({
+      where: { id: loan.id },
+      data: { returnedAt, fineCents: finePaise },
+    }),
+    prisma.bookCopy.update({
+      where: { id: loan.copyId },
+      data: { status: nextInQueue ? "reserved" : "available" },
+    }),
+    ...(nextInQueue
+      ? [
+          prisma.reservation.update({
+            where: { id: nextInQueue.id },
+            data: { status: "ready", readyAt: returnedAt },
+          }),
+        ]
+      : []),
+  ]);
+
+  revalidatePath(`/catalogue/${loan.copy.bookId}`);
+  revalidatePath("/catalogue");
+  revalidatePath("/dashboard");
+
+  const fineNote =
+    late > 0 ? ` It was ${late} day(s) late, so a fine of ${formatRupees(finePaise)} was recorded.` : "";
+
+  return done(`Returned "${loan.copy.book.title}".${fineNote}`);
+}
+
+export async function renewLoan(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  const loanId = String(formData.get("loanId") ?? "");
+
+  const loan = await prisma.loan.findUnique({
+    where: { id: loanId },
+    include: { copy: true },
+  });
+
+  if (!loan || loan.userId !== user.id || loan.returnedAt) {
+    return fail("Loan not found.");
+  }
+
+  if (loan.renewals >= MAX_RENEWALS) {
+    return fail(`You have already renewed this ${MAX_RENEWALS} times. Bring it back.`);
+  }
+
+  const waiting = await prisma.reservation.count({
+    where: { bookId: loan.copy.bookId, status: { in: ["waiting", "ready"] } },
+  });
+
+  if (waiting > 0) {
+    return fail("Someone is waiting for this book, so it cannot be renewed.");
+  }
+
+  if (overdueDays(loan.dueAt) > 0) {
+    return fail("This loan is already overdue. Return it and settle the fine first.");
+  }
+
+  const dueAt = new Date(loan.dueAt.getTime() + LOAN_DAYS * 24 * 60 * 60 * 1000);
+
+  await prisma.loan.update({
+    where: { id: loan.id },
+    data: { dueAt, renewals: { increment: 1 } },
+  });
+
+  revalidatePath("/dashboard");
+
+  return done(
+    `Renewed until ${dueAt.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    })}.`,
+  );
 }

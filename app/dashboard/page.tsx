@@ -4,10 +4,12 @@ import { SiteNav } from "@/components/site-nav";
 import { CancelReservationButton } from "@/components/reserve-button";
 import { AlertIcon, BookmarkIcon, BooksIcon, ClockIcon, MapPinIcon } from "@/components/icons";
 import { BookCover } from "@/components/book-cover";
+import { RenewLoanButton, ReturnLoanButton } from "@/components/borrow-buttons";
 import { requireUser } from "@/lib/session";
 import { isLibrarian } from "@/lib/roles";
 import {
   MAX_ACTIVE_LOANS,
+  MAX_RENEWALS,
   daysUntil,
   fineForPaise,
   formatRupees,
@@ -145,6 +147,14 @@ export default async function DashboardPage() {
                         Fine so far {formatRupees(fine)}
                       </p>
                     ) : null}
+
+                    <div className="mt-4 flex flex-wrap items-start gap-3 border-t border-line pt-4">
+                      <ReturnLoanButton loanId={loan.id} />
+                      <RenewLoanButton loanId={loan.id} />
+                      <span className="self-center text-xs text-muted">
+                        Renewed {loan.renewals} of {MAX_RENEWALS} times
+                      </span>
+                    </div>
                   </li>
                 );
               })}
@@ -208,7 +218,7 @@ export default async function DashboardPage() {
                     </Link>
                     <p className="mt-1 text-sm text-muted">
                       {reservation.status === "ready"
-                        ? "Ready for collection at the issue desk"
+                        ? "A copy is held for you. Borrow it now."
                         : `Position ${reservation.position} in the queue`}
                     </p>
                   </div>

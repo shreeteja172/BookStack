@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getPublicStats, getRecentActivity } from "@/lib/library";
 import {
   BooksIcon,
   CirculationIcon,
@@ -24,13 +25,12 @@ const features = [
   },
 ];
 
-const activity = [
-  { title: "The Midnight Library", state: "Checked out" },
-  { title: "Atomic Habits", state: "Returned" },
-  { title: "Project Hail Mary", state: "Reserved" },
-];
+export const dynamic = "force-dynamic";
 
-export default function Home() {
+export default async function Home() {
+  const [stats, activity] = await Promise.all([getPublicStats(), getRecentActivity()]);
+  const numbers = new Intl.NumberFormat("en-IN");
+
   return (
     <div className="min-h-screen bg-canvas text-ink">
       <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-12">
@@ -101,7 +101,7 @@ export default function Home() {
             <div className="rounded-2xl bg-surface p-5">
               <div className="mb-7 flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted">Good morning, Alex</p>
+                  <p className="text-sm text-muted">Live from the library</p>
                   <h2 className="text-xl font-bold">Library overview</h2>
                 </div>
                 <span className="rounded-full bg-sand px-3 py-1 text-xs font-bold text-brand">
@@ -110,16 +110,22 @@ export default function Home() {
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div className="rounded-xl bg-brand/10 p-4">
-                  <p className="text-xs text-muted">Total books</p>
-                  <p className="mt-1 text-2xl font-bold text-brand">12,486</p>
+                  <p className="text-xs text-muted">Total copies</p>
+                  <p className="mt-1 text-2xl font-bold text-brand">
+                    {numbers.format(stats.copies)}
+                  </p>
                 </div>
                 <div className="rounded-xl bg-brand-light/15 p-4">
                   <p className="text-xs text-muted">Checked out</p>
-                  <p className="mt-1 text-2xl font-bold text-brand-light">1,204</p>
+                  <p className="mt-1 text-2xl font-bold text-brand-light">
+                    {numbers.format(stats.onLoan)}
+                  </p>
                 </div>
                 <div className="rounded-xl bg-sand p-4">
                   <p className="text-xs text-muted">Members</p>
-                  <p className="mt-1 text-2xl font-bold text-ember">3,892</p>
+                  <p className="mt-1 text-2xl font-bold text-ember">
+                    {numbers.format(stats.members)}
+                  </p>
                 </div>
               </div>
               <div className="mt-6 flex items-center justify-between border-b border-line pb-3">
@@ -128,7 +134,7 @@ export default function Home() {
               </div>
               <ul className="space-y-4 pt-4 text-sm">
                 {activity.map((item) => (
-                  <li key={item.title} className="flex items-center justify-between gap-4">
+                  <li key={item.id} className="flex items-center justify-between gap-4">
                     <span className="font-semibold">{item.title}</span>
                     <span className="text-muted">{item.state}</span>
                   </li>

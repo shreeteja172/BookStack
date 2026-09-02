@@ -6,6 +6,8 @@ Built as a college major project.
 
 ## What makes it more than a CRUD app
 
+- **Borrowing happens on the site.** Members borrow, renew and return themselves; the librarian desk exists as an override, not as the only path.
+- **Recommendations from real behaviour.** Collaborative filtering over the loans table powers "members who borrowed this also borrowed" and a personalised dashboard feed, rather than matching on category.
 - **Shelf-level location tracking.** Every physical copy records Floor, Shelf and Row, so a member searching the catalogue is told exactly where to walk. Most basic library systems stop at "available: yes/no".
 - **A fair reservation queue.** When all copies are out, members join a queue. The moment a copy is returned it is placed on hold for the person at the front rather than going back on the shelf.
 - **Automatic overdue fines.** Fines accrue per day past the due date, shown live to the member while the book is still out and recorded permanently on return.
@@ -27,15 +29,18 @@ Built as a college major project.
 **Members**
 - Search the catalogue by title, author, ISBN, category or description
 - Filter by category and by "on shelf only"
-- See per-copy shelf locations and live availability
+- **Borrow a book directly from its page** — the loan is created online, no desk visit
+- **Return and renew from the dashboard**, with renewals blocked when someone is queued
 - Reserve a book when no copies are free, and see queue position
+- Rate and review books they have borrowed, with a verified-borrower badge
+- Personalised recommendations from collaborative filtering over borrowing history
 - Dashboard with current loans, days remaining, overdue warnings, running fine, and full borrowing history
 
 **Librarians** (everything above, plus)
 - Add, edit and delete books
 - Add and remove individual copies, with auto-generated barcodes
-- Issue a copy to a member by barcode and email (14-day loan)
-- Return a copy, with the fine calculated and the queue advanced automatically
+- Issue or return any copy on a member's behalf at the circulation desk, including webcam barcode scanning
+- Analytics: most-borrowed titles, category demand, monthly trend, late-return rate, and which titles to buy more copies of
 - Library-wide statistics and a list of everything currently on loan
 - Promote members to librarian
 
@@ -50,6 +55,8 @@ erDiagram
     Book ||--o{ BookCopy : "has physical"
     Book ||--o{ Reservation : "is queued for"
     BookCopy ||--o{ Loan : "is lent as"
+    User ||--o{ Review : "writes"
+    Book ||--o{ Review : "is rated by"
 
     User {
         string id PK
@@ -79,12 +86,19 @@ erDiagram
         datetime dueAt
         datetime returnedAt
         int fineCents
+        int renewals
     }
     Reservation {
         string id PK
         string status "waiting, ready"
         datetime createdAt
         datetime readyAt
+    }
+    Review {
+        string id PK
+        int rating "1 to 5"
+        string body
+        datetime createdAt
     }
 ```
 
@@ -97,6 +111,8 @@ The key modelling decision is the split between `Book` (the title, its ISBN and 
 | Loan period | 14 days | `LOAN_DAYS` in `lib/library.ts` |
 | Fine rate | Rs 5.00 per day overdue | `FINE_PER_DAY_PAISE` |
 | Borrowing limit | 3 books at once | `MAX_ACTIVE_LOANS` |
+| Renewal limit | 2 renewals per loan | `MAX_RENEWALS` |
+| Borrowing blocked at | Rs 50.00 of unpaid fines | `FINE_BORROW_BLOCK_PAISE` |
 
 Other enforced rules: a copy already on loan cannot be issued again; a copy held for the queue can only be issued to the member it is held for; a book with copies still on loan cannot be deleted; a copy on loan cannot be removed; ISBNs are unique; and new sign-ups are always created as `member` regardless of what the request body contains.
 
@@ -147,6 +163,14 @@ pnpm dev
 
 The seed loads 24 real books across 10 categories with 85 physical copies spread over three floors.
 
+To give the recommendations and analytics something to work with, load sample borrowing history:
+
+```bash
+npx tsx prisma/seed-demo.ts
+```
+
+That creates 30 members with persona-driven reading patterns, roughly 145 loans and 75 reviews.
+
 ## Scripts
 
 | Command | Does |
@@ -173,13 +197,15 @@ Open the `users` table and change `role` to `librarian`. After that you can prom
 A five-minute route through the project that shows every subsystem.
 
 1. **Sign up** at `/sign-up`. Point out that the account is created as a member even though the client could send any role — the server ignores it.
-2. **Search the catalogue.** Type `Kleppmann` to show author search, then `9780441013593` to show ISBN search, then filter by the Thriller category.
-3. **Open a book.** Show the per-copy table: barcode, Floor/Shelf/Row, and status. This is the "where do I actually find it" feature.
-4. **Add a book** from the catalogue (librarian only). Note the barcodes generate themselves from the ISBN.
-5. **Issue it.** Go to Circulation, enter the barcode and the member email. The due date is set 14 days out and the copy leaves the shelf.
-6. **Show the member dashboard.** Current loan, days remaining, and where to return it.
-7. **Demonstrate a fine.** Change that loan's `dueAt` to a past date in Prisma Studio, reload the dashboard, and the overdue badge and running fine appear. Return the copy at the desk and the fine is recorded in the history table.
-8. **Demonstrate the queue.** Issue every copy of a two-copy book, then reserve it as another member. Return one copy: it is not put back on the shelf but held, and the reserving member's dashboard now says "Ready for collection".
+2. **Search the catalogue.** Type `Kleppmann` for author search, then `9780441013593` for ISBN search, then filter by the Thriller category.
+3. **Borrow a book.** Open any title with copies on the shelf and press Borrow. The loan is created there and then, the copy flips to on loan, and the response names the shelf to collect it from.
+4. **Show the dashboard.** The new loan appears with days remaining, Return and Renew buttons, and a renewal counter.
+5. **Renew it**, then try renewing a book somebody else is queued for — that one is refused.
+6. **Demonstrate a fine.** Set a loan's `dueAt` to a past date in Prisma Studio, reload, and the overdue badge and running fine appear. Return it and the fine lands in the history table.
+7. **Demonstrate the queue.** Borrow every copy of a two-copy book, then reserve it from another account. Return one copy: it is held rather than reshelved, and the waiting member is told a copy is ready.
+8. **Show the recommendations.** "Members who borrowed this also borrowed" is collaborative filtering over real loan history, not a category lookup. The dashboard's "Picked for you" does the same per member.
+9. **Open Analytics** (librarian): monthly trend, most-borrowed titles, category demand, late-return rate, and a purchase-suggestion list ranked by loans per copy.
+10. **Add a book**, and scan a barcode at the Circulation desk with the webcam.
 
 ## Project structure
 

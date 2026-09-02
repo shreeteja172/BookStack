@@ -122,6 +122,7 @@ model Loan {
   dueAt      DateTime
   returnedAt DateTime?
   fineCents  Int       @default(0)
+  renewals   Int       @default(0)
 
   copyId String
   copy   BookCopy @relation(fields: [copyId], references: [id], onDelete: Cascade)
