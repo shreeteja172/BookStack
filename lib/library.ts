@@ -234,14 +234,16 @@ export async function getMembers() {
 }
 
 export async function getPublicStats() {
-  const [books, copies, onLoan, members] = await Promise.all([
+  const [books, copies, onLoan, members, loans, reviews] = await Promise.all([
     prisma.book.count(),
     prisma.bookCopy.count(),
     prisma.bookCopy.count({ where: { status: "on_loan" } }),
     prisma.user.count(),
+    prisma.loan.count(),
+    prisma.review.count(),
   ]);
 
-  return { books, copies, onLoan, members };
+  return { books, copies, onLoan, members, loans, reviews };
 }
 
 export async function getRecentActivity(limit = 3) {
