@@ -1,13 +1,14 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { SiteNav } from "@/components/site-nav";
-import { BarList, ColumnChart, DonutStat } from "@/components/charts";
+import { ActivityHeatmap, BarList, ColumnChart, DonutStat } from "@/components/charts";
 import { InsightsIcon } from "@/components/icons";
 import { requireLibrarian } from "@/lib/session";
 import { formatRupees } from "@/lib/library";
 import {
   getCategoryDemand,
   getCirculationHealth,
+  getDailyActivity,
   getMonthlyTrend,
   getPurchaseSuggestions,
   getTopBooks,
@@ -21,13 +22,14 @@ export const metadata: Metadata = {
 export default async function AnalyticsPage() {
   const user = await requireLibrarian();
 
-  const [topBooks, categories, trend, members, health, suggestions] = await Promise.all([
+  const [topBooks, categories, trend, members, health, suggestions, activity] = await Promise.all([
     getTopBooks(),
     getCategoryDemand(),
     getMonthlyTrend(),
     getTopMembers(),
     getCirculationHealth(),
     getPurchaseSuggestions(),
+    getDailyActivity(),
   ]);
 
   return (
@@ -50,7 +52,13 @@ export default async function AnalyticsPage() {
           <Stat label="Fines collected" value={formatRupees(health.finesCollectedPaise)} />
         </section>
 
-        <section className="mt-8 grid gap-6 lg:grid-cols-2">
+        <section className="mt-8">
+          <Panel title="Borrowing activity">
+            <ActivityHeatmap days={activity} />
+          </Panel>
+        </section>
+
+        <section className="mt-6 grid gap-6 lg:grid-cols-2">
           <Panel title="Loans per month">
             <ColumnChart rows={trend} />
           </Panel>

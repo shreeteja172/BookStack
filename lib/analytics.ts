@@ -134,3 +134,17 @@ export async function getPurchaseSuggestions(limit = 5): Promise<PurchaseSuggest
     };
   });
 }
+
+export async function getDailyActivity(weeks = 26): Promise<{ date: string; value: number }[]> {
+  const rows = await prisma.$queryRaw<{ day: Date; value: bigint }[]>`
+    SELECT date_trunc('day', l."issuedAt" AT TIME ZONE 'Asia/Kolkata') AS day, COUNT(*) AS value
+    FROM loans l
+    WHERE l."issuedAt" > now() - (${weeks * 7} * INTERVAL '1 day')
+    GROUP BY day
+  `;
+
+  return rows.map((row) => ({
+    date: new Date(row.day).toISOString().slice(0, 10),
+    value: Number(row.value),
+  }));
+}

@@ -113,3 +113,86 @@ export function DonutStat({
     </div>
   );
 }
+
+export function ActivityHeatmap({
+  days,
+  weeks = 26,
+}: {
+  days: { date: string; value: number }[];
+  weeks?: number;
+}) {
+  const counts = new Map(days.map((day) => [day.date, day.value]));
+  const max = Math.max(...days.map((day) => day.value), 1);
+  const cell = 14;
+  const gap = 3;
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(today.getDate() - (weeks * 7 - 1) - today.getDay());
+  const total = days.reduce((sum, day) => sum + day.value, 0);
+  const busiest = [...days].sort((a, b) => b.value - a.value)[0];
+  const monthFormat = new Intl.DateTimeFormat("en-IN", { month: "short" });
+  const labels: { x: number; text: string }[] = [];
+
+  const cells = Array.from({ length: (weeks + 1) * 7 }, (_, index) => {
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
+
+    if (date > today) {
+      return null;
+    }
+
+    const week = Math.floor(index / 7);
+    const key = date.toLocaleDateString("en-CA");
+    const value = counts.get(key) ?? 0;
+
+    if (date.getDate() === 1) {
+      labels.push({ x: 28 + week * (cell + gap), text: monthFormat.format(date) });
+    }
+
+    return { key, value, x: 28 + week * (cell + gap), y: 18 + date.getDay() * (cell + gap) };
+  });
+
+  return (
+    <div>
+      <div className="overflow-x-auto">
+        <svg
+          viewBox={`0 0 ${28 + (weeks + 1) * (cell + gap)} ${18 + 7 * (cell + gap)}`}
+          className="h-auto w-full min-w-[34rem]"
+          role="img"
+          aria-label="Loans issued per day"
+        >
+          {labels.map((label) => (
+            <text key={label.x} x={label.x} y="10" fontSize="10" fill="var(--color-muted)">
+              {label.text}
+            </text>
+          ))}
+          {["Mon", "Wed", "Fri"].map((day, index) => (
+            <text key={day} x="0" y={18 + (index * 2 + 1) * (cell + gap) + 11} fontSize="9" fill="var(--color-muted)">
+              {day}
+            </text>
+          ))}
+          {cells.map((item) =>
+            item ? (
+              <rect
+                key={item.key}
+                x={item.x}
+                y={item.y}
+                width={cell}
+                height={cell}
+                rx="3"
+                fill={item.value === 0 ? "var(--color-line)" : "var(--color-brand)"}
+                fillOpacity={item.value === 0 ? 1 : 0.25 + 0.75 * (item.value / max)}
+              >
+                <title>{`${item.key}: ${item.value} loan${item.value === 1 ? "" : "s"}`}</title>
+              </rect>
+            ) : null,
+          )}
+        </svg>
+      </div>
+      <p className="mt-3 text-sm text-muted">
+        {total} loans in the last {weeks} weeks
+        {busiest ? ` · busiest day ${busiest.date} with ${busiest.value}` : ""}
+      </p>
+    </div>
+  );
+}

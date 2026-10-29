@@ -19,6 +19,8 @@ import {
   getMemberStats,
 } from "@/lib/library";
 import { getPersonalRecommendations } from "@/lib/recommendations";
+import { getReaderProfile } from "@/lib/reader-profile";
+import { BadgeGrid, GenreRadar } from "@/components/reader-profile";
 
 export const metadata: Metadata = {
   title: "Dashboard · BookStack",
@@ -42,6 +44,7 @@ export default async function DashboardPage() {
     getPersonalRecommendations(user.id),
   ]);
 
+  const profile = await getReaderProfile(user.id, [...active, ...history]);
   const now = new Date();
 
   return (
@@ -162,6 +165,45 @@ export default async function DashboardPage() {
           )}
         </section>
 
+        <section className="mt-10 grid gap-6 lg:grid-cols-[1fr_1.4fr]">
+          <div className="rounded-2xl border border-line bg-surface p-6">
+            <h2 className="text-xl font-bold">Your reading shape</h2>
+            <p className="mt-1 text-sm text-muted">
+              {profile.topGenre
+                ? `Mostly ${profile.topGenre}, across ${profile.genres.length} categories`
+                : "Borrow a book to start your profile"}
+            </p>
+            <div className="mt-4">
+              <GenreRadar genres={profile.genres} />
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-line bg-surface p-6">
+            <h2 className="text-xl font-bold">Achievements</h2>
+            <div className="mt-4 grid grid-cols-3 gap-3 text-center">
+              <div className="rounded-xl bg-canvas p-3">
+                <p className="text-2xl font-bold text-brand">{profile.streak}</p>
+                <p className="text-xs text-muted">month streak</p>
+              </div>
+              <div className="rounded-xl bg-canvas p-3">
+                <p className="text-2xl font-bold text-brand">
+                  {profile.onTimeRate === null ? "-" : `${profile.onTimeRate}%`}
+                </p>
+                <p className="text-xs text-muted">returned on time</p>
+              </div>
+              <div className="rounded-xl bg-canvas p-3">
+                <p className="text-2xl font-bold text-brand">
+                  {profile.total === 0 ? "-" : `Top ${Math.max(1, 100 - profile.percentile)}%`}
+                </p>
+                <p className="text-xs text-muted">of readers here</p>
+              </div>
+            </div>
+            <div className="mt-4">
+              <BadgeGrid badges={profile.badges} />
+            </div>
+          </div>
+        </section>
+
         <section className="mt-10">
           <h2 className="text-xl font-bold">Picked for you</h2>
           <p className="mt-1 text-sm text-muted">{picks[0]?.reason ?? "Popular right now"}</p>
@@ -174,7 +216,7 @@ export default async function DashboardPage() {
                   className="flex h-full items-center gap-4 rounded-2xl border border-line bg-surface p-4 transition hover:border-brand-light"
                 >
                   <div className="h-24 w-16 shrink-0 overflow-hidden rounded-lg shadow-sm">
-                    <BookCover title={pick.title} author={pick.author} seed={pick.id} />
+                    <BookCover title={pick.title} author={pick.author} seed={pick.id} isbn={pick.isbn} />
                   </div>
                   <div className="min-w-0">
                     <p className="truncate font-bold">{pick.title}</p>

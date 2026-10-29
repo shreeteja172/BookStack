@@ -6,6 +6,7 @@ import { ReserveButton } from "@/components/reserve-button";
 import { BorrowButton } from "@/components/borrow-buttons";
 import { ArrowLeftIcon, MapPinIcon, UsersIcon } from "@/components/icons";
 import { BookCover } from "@/components/book-cover";
+import { FloorMap } from "@/components/floor-map";
 import { RatingSummary, ReviewForm, Stars } from "@/components/reviews";
 import { requireUser } from "@/lib/session";
 import { isLibrarian } from "@/lib/roles";
@@ -93,7 +94,7 @@ export default async function BookPage({ params }: PageProps<"/catalogue/[id]">)
             <div className="rounded-3xl border border-line bg-surface p-8">
               <div className="flex flex-wrap gap-6">
                 <div className="h-48 w-32 shrink-0 overflow-hidden rounded-xl shadow-md">
-                  <BookCover title={book.title} author={book.author} seed={book.id} />
+                  <BookCover title={book.title} author={book.author} seed={book.id} isbn={book.isbn} />
                 </div>
                 <div className="min-w-[16rem] flex-1">
                   <span className="rounded-full bg-sand px-3 py-1 text-xs font-bold text-brand">
@@ -168,6 +169,8 @@ export default async function BookPage({ params }: PageProps<"/catalogue/[id]">)
                   </tbody>
                 </table>
               </div>
+
+              <FloorMap copies={book.copies} />
             </div>
 
             <div className="rounded-3xl border border-line bg-surface p-8">

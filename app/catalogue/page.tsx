@@ -122,7 +122,7 @@ export default async function CataloguePage({ searchParams }: PageProps<"/catalo
                     className="flex h-full flex-col rounded-2xl border border-line bg-surface p-5 transition hover:border-brand-light"
                   >
                     <div className="mb-4 h-36 w-24 overflow-hidden rounded-lg shadow-sm">
-                      <BookCover title={book.title} author={book.author} seed={book.id} />
+                      <BookCover title={book.title} author={book.author} seed={book.id} isbn={book.isbn} />
                     </div>
                     <div className="flex items-start justify-between gap-3">
                       <span className="rounded-full bg-sand px-3 py-1 text-xs font-bold text-brand">

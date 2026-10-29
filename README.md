@@ -11,6 +11,13 @@ Built as a college major project.
 - **Shelf-level location tracking.** Every physical copy records Floor, Shelf and Row, so a member searching the catalogue is told exactly where to walk. Most basic library systems stop at "available: yes/no".
 - **A fair reservation queue.** When all copies are out, members join a queue. The moment a copy is returned it is placed on hold for the person at the front rather than going back on the shelf.
 - **Automatic overdue fines.** Fines accrue per day past the due date, shown live to the member while the book is still out and recorded permanently on return.
+- **Interactive floor map.** Each book page draws the floor plan and lights up the exact shelf and row, with a pulsing pin on the nearest copy on the shelf.
+- **Command palette.** Press Ctrl+K (or `/`) anywhere for instant, keyboard-driven search across titles, authors and ISBNs, plus quick jumps to every page.
+- **ISBN autofill.** Librarians scan a book's barcode with the webcam or type the ISBN, and title, author, publisher, year and description are pulled from Open Library (Google Books as fallback).
+- **Real covers.** Cover art is fetched from Open Library by ISBN, falling back to a generated cover when none exists.
+- **Reader profile and achievements.** A radar chart of each member's reading across categories, a monthly borrowing streak, on-time return rate, percentile among readers, and six progress badges.
+- **Borrowing heatmap.** A GitHub-style calendar of daily loans over the last six months on the analytics page.
+- **Dark mode**, remembered per browser with no flash on load.
 - **Role-aware interface.** The same routes render differently for members and librarians, and librarian-only pages are protected at the data layer, not just hidden in the navigation.
 
 ## Tech stack

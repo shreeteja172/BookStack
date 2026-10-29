@@ -24,6 +24,53 @@
   --color-surface: #ffffff;
 }
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+.dark {
+  --background: #0b1f20;
+  --foreground: #e6f2f0;
+  --color-brand: #2fbfb3;
+  --color-brand-light: #5fd6cc;
+  --color-sand: #1f3a37;
+  --color-ember: #ff8a55;
+  --color-ink: #e6f2f0;
+  --color-muted: #8fb0ad;
+  --color-line: #1e3b3c;
+  --color-canvas: #0b1f20;
+  --color-surface: #112b2c;
+  color-scheme: dark;
+}
+
+@keyframes palette-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.palette-in {
+  animation: palette-in 140ms ease-out;
+}
+
+@keyframes pin-pulse {
+  0% {
+    r: 6;
+    opacity: 0.7;
+  }
+  100% {
+    r: 22;
+    opacity: 0;
+  }
+}
+
+.pin-pulse {
+  animation: pin-pulse 1.6s ease-out infinite;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

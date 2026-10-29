@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { LogoMark } from "./icons";
 import { SignOutButton } from "./sign-out-button";
+import { CommandPalette } from "./command-palette";
+import { ThemeToggle } from "./theme-toggle";
 
 type SiteNavProps = {
   email: string;
@@ -38,8 +40,10 @@ export function SiteNav({ email, librarian }: SiteNavProps) {
             ))}
           </nav>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="hidden text-sm text-muted sm:inline">{email}</span>
+        <div className="flex items-center gap-3">
+          <CommandPalette librarian={librarian} />
+          <ThemeToggle />
+          <span className="hidden text-sm text-muted xl:inline">{email}</span>
           <SignOutButton />
         </div>
       </div>

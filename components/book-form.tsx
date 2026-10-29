@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useCallback, useRef, useState, useTransition } from "react";
 import { createBook, updateBook } from "@/lib/book-actions";
+import { lookupIsbn } from "@/lib/isbn-lookup";
 import { idleState } from "@/lib/action-state";
+import { BarcodeScanner } from "./barcode-scanner";
 
 const fieldClass =
   "w-full rounded-lg border border-line bg-canvas px-4 py-3 outline-none focus:border-brand";
@@ -116,11 +118,87 @@ function Feedback({ ok, message }: { ok: boolean; message: string }) {
   );
 }
 
-export function NewBookForm({ categories }: { categories: string[] }) {
-  const [state, formAction, pending] = useActionState(createBook, idleState);
+function IsbnAutofill({ formRef }: { formRef: React.RefObject<HTMLFormElement | null> }) {
+  const [isbn, setIsbn] = useState("");
+  const [status, setStatus] = useState<{ ok: boolean; message: string }>({ ok: true, message: "" });
+  const [pending, startTransition] = useTransition();
+
+  const fill = useCallback(
+    (value: string) => {
+      setIsbn(value);
+      startTransition(async () => {
+        const result = await lookupIsbn(value);
+        const form = formRef.current;
+
+        if (!result.ok || !form) {
+          setStatus({ ok: false, message: result.ok ? "Form not ready." : result.message });
+          return;
+        }
+
+        const values: Record<string, string> = {
+          ...result.details,
+          isbn: value.replace(/[^0-9Xx]/g, ""),
+        };
+
+        for (const [name, text] of Object.entries(values)) {
+          const field = form.elements.namedItem(name);
+
+          if (text && (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement)) {
+            field.value = text;
+          }
+        }
+
+        setStatus({ ok: true, message: `Filled in "${result.details.title}". Check the fields, then add it.` });
+      });
+    },
+    [formRef],
+  );
 
   return (
-    <form action={formAction} className="rounded-2xl border border-line bg-surface p-6">
+    <div className="mb-8 rounded-2xl border border-dashed border-brand-light bg-brand/5 p-5">
+      <p className="font-bold">Autofill from ISBN</p>
+      <p className="mt-1 text-sm text-muted">
+        Scan the barcode on the back cover or type the ISBN. Details are pulled from Open Library, with
+        Google Books as a fallback.
+      </p>
+      <div className="mt-4 flex flex-wrap gap-3">
+        <input
+          value={isbn}
+          onChange={(event) => setIsbn(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              fill(isbn);
+            }
+          }}
+          placeholder="9780441013593"
+          inputMode="numeric"
+          className={`${fieldClass} max-w-xs font-mono`}
+        />
+        <button
+          type="button"
+          onClick={() => fill(isbn)}
+          disabled={pending || isbn.trim().length === 0}
+          className="rounded-lg bg-brand px-5 py-3 font-semibold text-white hover:brightness-110 disabled:opacity-60"
+        >
+          {pending ? "Looking up..." : "Fetch details"}
+        </button>
+      </div>
+      <div className="mt-3">
+        <BarcodeScanner onDetected={fill} />
+      </div>
+      <Feedback ok={status.ok} message={status.message} />
+    </div>
+  );
+}
+
+export function NewBookForm({ categories }: { categories: string[] }) {
+  const [state, formAction, pending] = useActionState(createBook, idleState);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  return (
+    <form ref={formRef} action={formAction} className="rounded-2xl border border-line bg-surface p-6">
+      <IsbnAutofill formRef={formRef} />
       <Shared values={{}} categories={categories} />
 
       <h2 className="mt-8 border-t border-line pt-6 text-lg font-bold">Copies and location</h2>

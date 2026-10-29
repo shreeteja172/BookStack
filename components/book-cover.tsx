@@ -1,3 +1,5 @@
+import { CoverPhoto } from "./cover-photo";
+
 const PALETTES = [
   ["#017b7b", "#26b1b1"],
   ["#e3703a", "#ffb066"],
@@ -30,10 +32,24 @@ type BookCoverProps = {
   title: string;
   author: string;
   seed: string;
+  isbn?: string;
   className?: string;
 };
 
-export function BookCover({ title, author, seed, className }: BookCoverProps) {
+export function BookCover({ isbn, ...props }: BookCoverProps) {
+  if (!isbn) {
+    return <GeneratedCover {...props} />;
+  }
+
+  return (
+    <div className="relative h-full w-full">
+      <GeneratedCover {...props} />
+      <CoverPhoto isbn={isbn} alt={`${props.title} by ${props.author}`} />
+    </div>
+  );
+}
+
+function GeneratedCover({ title, author, seed, className }: Omit<BookCoverProps, "isbn">) {
   const index = hash(seed) % PALETTES.length;
   const [from, to] = PALETTES[index];
   const gradientId = `cover-${hash(seed)}-${index}`;

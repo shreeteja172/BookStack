@@ -7,6 +7,7 @@ export type Recommendation = {
   title: string;
   author: string;
   category: string;
+  isbn: string;
   score: number;
   reason: string;
 };
@@ -16,6 +17,7 @@ type RawRow = {
   title: string;
   author: string;
   category: string;
+  isbn: string;
   score: bigint | number;
 };
 
@@ -25,6 +27,7 @@ function toRecommendations(rows: RawRow[], reason: string): Recommendation[] {
     title: row.title,
     author: row.author,
     category: row.category,
+    isbn: row.isbn,
     score: Number(row.score),
     reason,
   }));
@@ -32,7 +35,7 @@ function toRecommendations(rows: RawRow[], reason: string): Recommendation[] {
 
 export async function getAlsoBorrowed(bookId: string, limit = 4) {
   const rows = await prisma.$queryRaw<RawRow[]>`
-    SELECT b.id, b.title, b.author, b.category,
+    SELECT b.id, b.title, b.author, b.category, b.isbn,
            COUNT(DISTINCT peer."userId") AS score
     FROM loans mine
     JOIN book_copies mine_copy ON mine_copy.id = mine."copyId"
@@ -41,7 +44,7 @@ export async function getAlsoBorrowed(bookId: string, limit = 4) {
     JOIN books b ON b.id = peer_copy."bookId"
     WHERE mine_copy."bookId" = ${bookId}
       AND peer_copy."bookId" <> ${bookId}
-    GROUP BY b.id, b.title, b.author, b.category
+    GROUP BY b.id, b.title, b.author, b.category, b.isbn
     HAVING COUNT(DISTINCT peer."userId") > 1
     ORDER BY score DESC, b.title ASC
     LIMIT ${limit}
@@ -66,14 +69,14 @@ export async function getPersonalRecommendations(userId: string, limit = 6) {
         AND l."userId" <> ${userId}
       GROUP BY l."userId"
     )
-    SELECT b.id, b.title, b.author, b.category,
+    SELECT b.id, b.title, b.author, b.category, b.isbn,
            SUM(n.overlap) AS score
     FROM neighbours n
     JOIN loans l ON l."userId" = n.peer_id
     JOIN book_copies c ON c.id = l."copyId"
     JOIN books b ON b.id = c."bookId"
     WHERE c."bookId" NOT IN (SELECT "bookId" FROM mine)
-    GROUP BY b.id, b.title, b.author, b.category
+    GROUP BY b.id, b.title, b.author, b.category, b.isbn
     ORDER BY score DESC, b.title ASC
     LIMIT ${limit}
   `;
@@ -87,11 +90,11 @@ export async function getPersonalRecommendations(userId: string, limit = 6) {
 
 export async function getPopularBooks(limit = 6) {
   const rows = await prisma.$queryRaw<RawRow[]>`
-    SELECT b.id, b.title, b.author, b.category, COUNT(l.id) AS score
+    SELECT b.id, b.title, b.author, b.category, b.isbn, COUNT(l.id) AS score
     FROM books b
     JOIN book_copies c ON c."bookId" = b.id
     LEFT JOIN loans l ON l."copyId" = c.id
-    GROUP BY b.id, b.title, b.author, b.category
+    GROUP BY b.id, b.title, b.author, b.category, b.isbn
     ORDER BY score DESC, b.title ASC
     LIMIT ${limit}
   `;
