@@ -304,7 +304,7 @@ function HeroShowcase({ books }: { books: ShowcaseBook[] }) {
             href={`/catalogue/${book.id}`}
             className={`absolute h-48 w-32 overflow-hidden rounded-xl shadow-2xl shadow-ink/30 ring-1 ring-black/5 transition duration-300 hover:z-20 hover:-translate-y-3 hover:rotate-0 sm:h-56 sm:w-36 ${placements[index]}`}
           >
-            <BookCover title={book.title} author={book.author} seed={book.id} isbn={book.isbn} />
+            <BookCover title={book.title} author={book.author} seed={book.id} isbn={book.isbn} eager />
           </Link>
         ))}
       </div>

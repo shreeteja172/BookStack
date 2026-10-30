@@ -33,10 +33,11 @@ type BookCoverProps = {
   author: string;
   seed: string;
   isbn?: string;
+  eager?: boolean;
   className?: string;
 };
 
-export function BookCover({ isbn, ...props }: BookCoverProps) {
+export function BookCover({ isbn, eager, ...props }: BookCoverProps) {
   if (!isbn) {
     return <GeneratedCover {...props} />;
   }
@@ -44,12 +45,12 @@ export function BookCover({ isbn, ...props }: BookCoverProps) {
   return (
     <div className="relative h-full w-full">
       <GeneratedCover {...props} />
-      <CoverPhoto isbn={isbn} alt={`${props.title} by ${props.author}`} />
+      <CoverPhoto isbn={isbn} alt={`${props.title} by ${props.author}`} eager={eager} />
     </div>
   );
 }
 
-function GeneratedCover({ title, author, seed, className }: Omit<BookCoverProps, "isbn">) {
+function GeneratedCover({ title, author, seed, className }: Omit<BookCoverProps, "isbn" | "eager">) {
   const index = hash(seed) % PALETTES.length;
   const [from, to] = PALETTES[index];
   const gradientId = `cover-${hash(seed)}-${index}`;

@@ -115,14 +115,14 @@ export async function getRatingSummary(bookId: string) {
   };
 }
 
-export async function getRatingSummaries(bookIds: string[]) {
-  if (bookIds.length === 0) {
+export async function getRatingSummaries(bookIds?: string[]) {
+  if (bookIds?.length === 0) {
     return new Map<string, { average: number; count: number }>();
   }
 
   const rows = await prisma.review.groupBy({
     by: ["bookId"],
-    where: { bookId: { in: bookIds } },
+    where: bookIds ? { bookId: { in: bookIds } } : {},
     _avg: { rating: true },
     _count: { rating: true },
   });

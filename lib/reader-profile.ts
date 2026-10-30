@@ -40,12 +40,13 @@ function monthStreak(loans: LoanLike[], now: Date) {
   return streak;
 }
 
-export async function getReaderProfile(userId: string, loans: LoanLike[]) {
+export async function getReaderProfile(userId: string, loansPromise: Promise<LoanLike[]>) {
   const now = new Date();
 
-  const [reviews, perMember] = await Promise.all([
+  const [reviews, perMember, loans] = await Promise.all([
     prisma.review.count({ where: { userId } }),
     prisma.loan.groupBy({ by: ["userId"], _count: { _all: true } }),
+    loansPromise,
   ]);
 
   const total = loans.length;

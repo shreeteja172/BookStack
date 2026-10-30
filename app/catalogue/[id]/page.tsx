@@ -41,25 +41,24 @@ export default async function BookPage({ params }: PageProps<"/catalogue/[id]">)
   const librarian = isLibrarian(user);
   const { id } = await params;
 
-  const book = await getBook(id);
+  const [book, alsoBorrowed, rating, reviews, myReview, borrowed, activeLoan] = await Promise.all([
+    getBook(id),
+    getAlsoBorrowed(id),
+    getRatingSummary(id),
+    getBookReviews(id),
+    getMyReview(user.id, id),
+    hasBorrowed(user.id, id),
+    prisma.loan.findFirst({
+      where: { userId: user.id, returnedAt: null, copy: { bookId: id } },
+      select: { id: true },
+    }),
+  ]);
 
   if (!book) {
     notFound();
   }
 
-  const [alsoBorrowed, related, rating, reviews, myReview, borrowed] = await Promise.all([
-    getAlsoBorrowed(book.id),
-    getRelatedBooks(book.id, book.category),
-    getRatingSummary(book.id),
-    getBookReviews(book.id),
-    getMyReview(user.id, book.id),
-    hasBorrowed(user.id, book.id),
-  ]);
-
-  const activeLoan = await prisma.loan.findFirst({
-    where: { userId: user.id, returnedAt: null, copy: { bookId: book.id } },
-    select: { id: true },
-  });
+  const related = alsoBorrowed.length > 0 ? [] : await getRelatedBooks(book.id, book.category);
 
   const alreadyHave = activeLoan !== null;
   const onShelf = book.availableCount > 0;
@@ -94,7 +93,7 @@ export default async function BookPage({ params }: PageProps<"/catalogue/[id]">)
             <div className="rounded-3xl border border-line bg-surface p-8">
               <div className="flex flex-wrap gap-6">
                 <div className="h-48 w-32 shrink-0 overflow-hidden rounded-xl shadow-md">
-                  <BookCover title={book.title} author={book.author} seed={book.id} isbn={book.isbn} />
+                  <BookCover title={book.title} author={book.author} seed={book.id} isbn={book.isbn} eager />
                 </div>
                 <div className="min-w-[16rem] flex-1">
                   <span className="rounded-full bg-sand px-3 py-1 text-xs font-bold text-brand">

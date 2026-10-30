@@ -22,12 +22,11 @@ export default async function CataloguePage({ searchParams }: PageProps<"/catalo
   const category = typeof params.category === "string" ? params.category : "";
   const availableOnly = params.available === "1";
 
-  const [books, categories] = await Promise.all([
+  const [books, categories, ratings] = await Promise.all([
     searchBooks({ query, category, availableOnly }),
     getCategories(),
+    getRatingSummaries(),
   ]);
-
-  const ratings = await getRatingSummaries(books.map((book) => book.id));
 
   return (
     <div className="min-h-screen bg-canvas text-ink">

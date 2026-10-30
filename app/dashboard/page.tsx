@@ -36,15 +36,20 @@ export default async function DashboardPage() {
   const user = await requireUser();
   const librarian = isLibrarian(user);
 
-  const [{ active, history }, reservations, stats, libraryStats, picks] = await Promise.all([
-    getMemberLoans(user.id),
-    getMemberReservations(user.id),
-    getMemberStats(user.id),
-    librarian ? getLibraryStats() : Promise.resolve(null),
-    getPersonalRecommendations(user.id),
-  ]);
+  const loans = getMemberLoans(user.id);
 
-  const profile = await getReaderProfile(user.id, [...active, ...history]);
+  const [{ active, history }, reservations, stats, libraryStats, picks, profile] =
+    await Promise.all([
+      loans,
+      getMemberReservations(user.id),
+      getMemberStats(user.id),
+      librarian ? getLibraryStats() : Promise.resolve(null),
+      getPersonalRecommendations(user.id),
+      getReaderProfile(
+        user.id,
+        loans.then((result) => [...result.active, ...result.history]),
+      ),
+    ]);
   const now = new Date();
 
   return (

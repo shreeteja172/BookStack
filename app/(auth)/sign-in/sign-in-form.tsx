@@ -26,8 +26,7 @@ export function SignInForm({ redirectTo }: { redirectTo: string }) {
       return;
     }
 
-    router.push(redirectTo);
-    router.refresh();
+    router.replace(redirectTo);
   }
 
   return (
